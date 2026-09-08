@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PocketBase ToDo App</title>
+    <script src="https://cdn.jsdelivr.net/npm/pocketbase@0.21.0/dist/pocketbase.umd.js"></script>
+    <style>
+        /* Variáveis de cor atualizadas para o Tema Escuro */
+        :root {
+            --primary: #6366F1;
+            /* Azul/roxo mais vibrante para destacar no fundo escuro */
+            --bg: #111827;
+            /* Fundo da página (quase preto) */
+            --text: #F9FAFB;
+            /* Texto principal (quase branco) */
+            --card-bg: #1F2937;
+            /* Fundo do container e dos cartões (cinza escuro) */
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .app-container {
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+            /* Sombra um pouco mais forte */
+            width: 100%;
+            max-width: 600px;
+        }
+
+        h2 {
+            margin-top: 0;
+            color: var(--primary);
+            text-align: center;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 12px;
+            background-color: #374151;
+            /* Fundo do input escuro */
+            color: var(--text);
+            border: 1px solid #4B5563;
+            /* Borda sutil */
+            border-radius: 6px;
+            font-size: 16px;
+        }
+
+        input[type="text"]::placeholder {
+            color: #9CA3AF;
+        }
+
+        input[type="text"]:focus {
+            outline: 2px solid var(--primary);
+            border-color: transparent;
+        }
+
+        button.btn-add {
+            background: var(--primary);
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        button.btn-add:hover {
+            background: #4F46E5;
+        }
+
+        .tarefa-card {
+            border: 1px solid #374151;
+            /* Borda adequada pro tema escuro */
+            border-left: 5px solid #F59E0B;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            background: var(--card-bg);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            transition: all 0.2s;
+        }
+
+        .tarefa-card.concluida-card {
+            border-left-color: #10B981;
+            background-color: #111827;
+            /* Fica mais "apagado" quando concluída */
+        }
+
+        .tarefa-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .tarefa-titulo {
+            font-size: 18px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            accent-color: var(--primary);
+        }
+
+        .concluida-texto {
+            text-decoration: line-through;
+            color: #6B7280;
+        }
+
+        /* Riscado mais escuro */
+
+        button.btn-del {
+            background: #EF4444;
+            color: white;
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        button.btn-del:hover {
+            background: #DC2626;
+        }
+
+        .tarefa-detalhes {
+            font-size: 13px;
+            color: #9CA3AF;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .badge {
+            background: #374151;
+            /* Etiqueta escura */
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            color: #D1D5DB;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="app-container">
+        <h2>To-Do List | PocketBase</h2>
+
+        <div class="input-group">
+            <input type="text" id="novaTarefa" placeholder="O que você precisa fazer?">
+            <button class="btn-add" onclick="adicionarTarefa()">Adicionar</button>
+        </div>
+
+        <div id="listaTarefas">
+            <p style="text-align:center; color:#9CA3AF;">Carregando tarefas...</p>
+        </div>
+    </div>
+
+    <script>
+        const pb = new PocketBase('http://127.0.0.1:8090');
+
+        function formatarDataVisao(dataISO) {
+            if (!dataISO) return '';
+            const data = new Date(dataISO);
+            return data.toLocaleString('pt-BR');
+        }
+
+        async function carregarTarefas() {
+            try {
+                const records = await pb.collection('tarefas').getFullList();
+                const lista = document.getElementById('listaTarefas');
+                lista.innerHTML = '';
+
+                if (records.length === 0) {
+                    lista.innerHTML = '<p style="text-align:center; color:#9CA3AF;">Nenhuma tarefa encontrada.</p>';
+                    return;
+                }
+
+                records.forEach(tarefa => {
+                    const statusChecked = tarefa.concluida ? 'checked' : '';
+                    const classeConcluida = tarefa.concluida ? 'concluida-texto' : '';
+                    const classeCard = tarefa.concluida ? 'concluida-card' : '';
+
+                    const dataCriacaoBruta = tarefa.criada || tarefa.created;
+                    const dataCriadaFormatada = formatarDataVisao(dataCriacaoBruta) || 'Sem data';
+
+                    const textoEncerrada = tarefa.encerrada ? ` | <b>Encerrada em:</b> ${formatarDataVisao(tarefa.encerrada)}` : '';
+
+                    lista.innerHTML += `
+                        <div class="tarefa-card ${classeCard}">
+                            <div class="tarefa-header">
+                                <label class="tarefa-titulo">
+                                    <input type="checkbox" ${statusChecked} onchange="alternarStatus('${tarefa.id}', ${tarefa.concluida})">
+                                    <span class="${classeConcluida}">${tarefa.titulo}</span>
+                                </label>
+                                <button class="btn-del" onclick="deletarTarefa('${tarefa.id}')">Excluir</button>
+                            </div>
+                            <div class="tarefa-detalhes">
+                                <span><b>Criada em:</b> ${dataCriadaFormatada}${textoEncerrada}</span>
+                            </div>
+                        </div>
+                    `;
+                });
+            } catch (erro) {
+                console.error(erro);
+                alert("Erro ao CARREGAR as tarefas: " + erro.message);
+            }
+        }
+
+        async function adicionarTarefa() {
+            const input = document.getElementById('novaTarefa');
+            if (!input.value) return;
+
+            try {
+                await pb.collection('tarefas').create({
+                    titulo: input.value,
+                    concluida: false,
+                    encerrada: null
+                });
+                input.value = '';
+                carregarTarefas();
+            } catch (erro) {
+                alert("Erro ao ADICIONAR a tarefa: " + erro.message);
+            }
+        }
+
+        async function alternarStatus(id, statusAtual) {
+            try {
+                const novoStatus = !statusAtual;
+                const dataEncerradaBanco = novoStatus ? new Date().toISOString() : null;
+
+                await pb.collection('tarefas').update(id, {
+                    concluida: novoStatus,
+                    encerrada: dataEncerradaBanco
+                });
+                carregarTarefas();
+            } catch (erro) {
+                alert("Erro ao ATUALIZAR a tarefa: " + erro.message);
+            }
+        }
+
+        async function deletarTarefa(id) {
+            try {
+                await pb.collection('tarefas').delete(id);
+                carregarTarefas();
+            } catch (erro) {
+                alert("Erro ao DELETAR a tarefa: " + erro.message);
+            }
+        }
+
+        carregarTarefas();
+    </script>
+</body>
+
+</html>

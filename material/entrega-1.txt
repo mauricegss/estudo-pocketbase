@@ -1,0 +1,17 @@
+Entrega da apresentação em formato PDF aqui pelo Moodle, juntamente com o link do Github do projeto de exemplo com as instruções para executar e testar. 
+
+Apresentação: 
+A apresentação (slides) devem conter as seguintes informações: 
+
+Nome da Tecnologia, site oficial e ano de criação
+Área da tecnologia (front, back, databases, segurança, IA, etc). 
+Empresas que usam em produção
+Um exemplo de estudo de caso de alguma empresa que já usa a tecnologia em produção
+Conteúdo sobre a tecnologia (funcionalidades principais, plataformas de deploy, drivers, etc.) 
+Demonstração (exemplo que mostra a tecnologia funcionando, rodando localmente) 
+Demonstração 
+O exemplo pode ser algo simples como um ToDo app;
+Porém a demo precisa demonstrar as funcionalidades da tecnologia 
+O exemplo deve rodar na hora da apresentação (de forma local ou hospedado em algum server gratuito)
+O aluno deve mostrar o código para os alunos (embutido na apresentação ou na IDE) 
+O código deve ser hospedado no Github, com README com instruções de instalação, configuração e teste. 
